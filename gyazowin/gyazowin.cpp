@@ -6,8 +6,10 @@
 
 // グローバル変数:
 HINSTANCE hInst;							// 現在のインターフェイス
-TCHAR *szTitle			= _T("gyazowin");	// タイトル バーのテキスト
+TCHAR *szTitle			= _T("Gyazo");		// タイトル バーのテキスト
 TCHAR *szWindowClass	= _T("GYAZOWIN");	// メイン ウィンドウ クラス名
+TCHAR *szWindowClassL	= _T("GYAZOWINL");	// レイヤー ウィンドウ クラス名
+HWND hLayerWnd;
 
 int ofX, ofY;	// 画面オフセット
 
@@ -15,6 +17,7 @@ int ofX, ofY;	// 画面オフセット
 ATOM				MyRegisterClass(HINSTANCE hInstance);
 BOOL				InitInstance(HINSTANCE, int);
 LRESULT CALLBACK	WndProc(HWND, UINT, WPARAM, LPARAM);
+LRESULT CALLBACK	LayerWndProc(HWND, UINT, WPARAM, LPARAM);
 
 int					GetEncoderClsid(const WCHAR* format, CLSID* pClsid);
 
@@ -71,7 +74,7 @@ int APIENTRY _tWinMain(HINSTANCE hInstance,
 				uploadFile(NULL, tmpFile);
 			} else {
 				// PNGに変換できなかった...
-				MessageBox(NULL, _T("cannot convert this image"), _T("ERROR"), 
+				MessageBox(NULL, _T("Cannot convert this image"), szTitle, 
 					MB_OK | MB_ICONERROR);
 			}
 			DeleteFile(tmpFile);
@@ -126,6 +129,20 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 {
 	WNDCLASS wc;
 
+
+	wc.style         = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc   = LayerWndProc;
+	wc.cbClsExtra    = 0;
+	wc.cbWndExtra    = 0;
+	wc.hInstance     = hInstance;
+	wc.hIcon         = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_GYAZOWIN));
+	wc.hCursor       = LoadCursor(NULL, IDC_CROSS);	// + のカーソル
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.lpszMenuName  = 0;
+	wc.lpszClassName = szWindowClassL;
+
+	RegisterClass(&wc);
+
 	wc.style         = 0;							// WM_PAINT を送らない
 	wc.lpfnWndProc   = WndProc;
 	wc.cbClsExtra    = 0;
@@ -145,6 +162,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
 	HWND hWnd;
+//	HWND hLayerWnd;
 	hInst = hInstance; // グローバル変数にインスタンス処理を格納します。
 
 	int x, y, w, h;
@@ -166,7 +184,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 #endif
 		,
 		szWindowClass, NULL, WS_POPUP,
-		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0,
+		0, 0, 0, 0,
 		NULL, NULL, hInstance, NULL);
 
 	// 作れなかった...?
@@ -178,6 +196,25 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	// nCmdShow を無視 (SW_MAXIMIZE とかされると困る)
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
+
+
+
+	// レイヤーウィンドウの作成
+	hLayerWnd = CreateWindowEx(
+	 WS_EX_TOOLWINDOW
+#if(_WIN32_WINNT >= 0x0500)
+		| WS_EX_LAYERED | WS_EX_NOACTIVATE
+#endif
+		,
+		szWindowClassL, NULL, WS_POPUP,
+		100, 100, 300, 300,
+		hWnd, NULL, hInstance, NULL);
+
+    SetLayeredWindowAttributes(hLayerWnd, RGB(255, 0, 0), 100, LWA_COLORKEY|LWA_ALPHA);
+
+	
+
+
 	
 	return TRUE;
 }
@@ -221,7 +258,42 @@ VOID drawRubberband(HDC hdc, LPRECT newRect, BOOL erase)
 	
 	static BOOL firstDraw = TRUE;	// 1 回目は前のバンドの消去を行わない
 	static RECT lastRect  = {0};	// 最後に描画したバンド
+	static RECT clipRect  = {0};	// 最後に描画したバンド
 	
+	if(firstDraw) {
+		// レイヤーウィンドウを表示
+		ShowWindow(hLayerWnd, SW_SHOW);
+		UpdateWindow(hLayerWnd);
+
+		firstDraw = FALSE;
+	}
+
+	if (erase) {
+		// レイヤーウィンドウを隠す
+		ShowWindow(hLayerWnd, SW_HIDE);
+		
+	}
+
+	// 座標チェック
+	clipRect = *newRect;
+	if ( clipRect.right  < clipRect.left ) {
+		int tmp = clipRect.left;
+		clipRect.left   = clipRect.right;
+		clipRect.right  = tmp;
+	}
+	if ( clipRect.bottom < clipRect.top  ) {
+		int tmp = clipRect.top;
+		clipRect.top    = clipRect.bottom;
+		clipRect.bottom = tmp;
+	}
+	MoveWindow(hLayerWnd,  clipRect.left, clipRect.top, 
+			clipRect.right-  clipRect.left + 1, clipRect.bottom - clipRect.top + 1,true);
+
+	
+	return;
+
+/* rakusai 2009/11/2
+
 	// XOR で描画
 	int hPreRop = SetROP2(hdc, R2_XORPEN);
 
@@ -241,6 +313,9 @@ VOID drawRubberband(HDC hdc, LPRECT newRect, BOOL erase)
 	// 新しい座標を記憶
 	lastRect = *newRect;
 	
+	
+
+
 	if (!erase) {
 
 		// 枠を描画
@@ -249,9 +324,12 @@ VOID drawRubberband(HDC hdc, LPRECT newRect, BOOL erase)
 
 	}
 
+
 	// 後処理
 	SetROP2(hdc, hPreRop);
 	DeleteObject(hPen);
+
+*/
 
 }
 
@@ -317,6 +395,84 @@ BOOL savePNG(LPCTSTR fileName, HBITMAP newBMP)
 	return res;
 }
 
+// レイヤーウィンドウプロシージャ
+LRESULT CALLBACK LayerWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	HDC hdc;
+	RECT clipRect	= {0, 0, 500, 500};
+	HBRUSH hBrush;
+	HPEN hPen;
+	HFONT hFont;
+
+
+	switch (message)
+	{
+	case WM_ERASEBKGND:
+		 GetClientRect(hWnd, &clipRect);
+		
+		hdc = GetDC(hWnd);
+        hBrush = CreateSolidBrush(RGB(100,100,100));
+        SelectObject(hdc, hBrush);
+		hPen = CreatePen(PS_DASH,1,RGB(255,255,255));
+		SelectObject(hdc, hPen);
+		Rectangle(hdc,0,0,clipRect.right,clipRect.bottom);
+
+		//矩形のサイズを出力
+		int fHeight;
+		fHeight = -MulDiv(8, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+		hFont = CreateFont(fHeight,    //フォント高さ
+			0,                    //文字幅
+			0,                    //テキストの角度
+			0,                    //ベースラインとｘ軸との角度
+			FW_REGULAR,            //フォントの重さ（太さ）
+			FALSE,                //イタリック体
+			FALSE,                //アンダーライン
+			FALSE,                //打ち消し線
+			ANSI_CHARSET,    //文字セット
+			OUT_DEFAULT_PRECIS,    //出力精度
+			CLIP_DEFAULT_PRECIS,//クリッピング精度
+			PROOF_QUALITY,        //出力品質
+			FIXED_PITCH | FF_MODERN,//ピッチとファミリー
+			L"Tahoma");    //書体名
+
+		SelectObject(hdc, hFont);
+		// show size
+		int iWidth, iHeight;
+		iWidth  = clipRect.right  - clipRect.left;
+		iHeight = clipRect.bottom - clipRect.top;
+
+		wchar_t sWidth[200], sHeight[200];
+		swprintf_s(sWidth, L"%d", iWidth);
+		swprintf_s(sHeight, L"%d", iHeight);
+
+		int w,h,h2;
+		w = -fHeight * 2.5 + 8;
+		h = -fHeight * 2 + 8;
+		h2 = h + fHeight;
+
+		SetBkMode(hdc,TRANSPARENT);
+		SetTextColor(hdc,RGB(0,0,0));
+		TextOut(hdc, clipRect.right-w+1,clipRect.bottom-h+1,(LPCWSTR)sWidth,wcslen(sWidth));
+		TextOut(hdc, clipRect.right-w+1,clipRect.bottom-h2+1,(LPCWSTR)sHeight,wcslen(sHeight));
+		SetTextColor(hdc,RGB(255,255,255));
+		TextOut(hdc, clipRect.right-w,clipRect.bottom-h,(LPCWSTR)sWidth,wcslen(sWidth));
+		TextOut(hdc, clipRect.right-w,clipRect.bottom-h2,(LPCWSTR)sHeight,wcslen(sHeight));
+
+		DeleteObject(hPen);
+		DeleteObject(hBrush);
+		DeleteObject(hFont);
+		ReleaseDC(hWnd, hdc);
+
+		return TRUE;
+
+        break;
+	default:
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+	return 0;
+
+}
+
 // ウィンドウプロシージャ
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -328,7 +484,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	
 	switch (message)
 	{
-	
 	case WM_RBUTTONDOWN:
 		// キャンセル
 		DestroyWindow(hWnd);
@@ -337,16 +492,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 	case WM_MOUSEMOVE:
 		if (onClip) {
-			
 			// 新しい座標をセット
 			clipRect.right  = LOWORD(lParam) + ofX;
 			clipRect.bottom = HIWORD(lParam) + ofY;
 			
 			hdc = GetDC(NULL);
 			drawRubberband(hdc, &clipRect, FALSE);
+
 			ReleaseDC(NULL, hdc);
-			
-			// EndPaint(hWnd, &ps);
 		}
 		break;
 	
@@ -360,6 +513,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			clipRect.left = LOWORD(lParam) + ofX;
 			clipRect.top  = HIWORD(lParam) + ofY;
 			
+
+
 			// マウスをキャプチャ
 			SetCapture(hWnd);
 		}
@@ -420,7 +575,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			
 			// ウィンドウを隠す!
 			ShowWindow(hWnd, SW_HIDE);
-			
 			/*
 			// 画像をクリップボードにコピー
 			if ( OpenClipboard(hWnd) ) {
@@ -464,7 +618,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 			} else {
 				// PNG保存失敗...
-				MessageBox(hWnd, _T("cannot save png image"), _T("ERROR"), 
+				MessageBox(hWnd, _T("Cannot save png image"), szTitle, 
 					MB_OK | MB_ICONERROR);
 			}
 
@@ -476,6 +630,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			ReleaseDC(NULL, hdc);
 			DestroyWindow(hWnd);
+			PostMessage(hWnd,WM_CLOSE,0,0);
+//			PostQuitMessage(0);
 		}
 		break;
 
@@ -616,7 +772,7 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	std::ifstream png;
 	png.open(fileName, std::ios::binary);
 	if (png.fail()) {
-		MessageBox(hwnd, _T("png open failed"), _T("ERROR"), MB_ICONERROR | MB_OK);
+		MessageBox(hwnd, _T("PNG open failed"), szTitle, MB_ICONERROR | MB_OK);
 		png.close();
 		return FALSE;
 	}
@@ -637,8 +793,8 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	HINTERNET hSession    = InternetOpen(szTitle, 
 		INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if(NULL == hSession) {
-		MessageBox(hwnd, _T("cannot configure wininet"),
-			_T("Error"), MB_ICONERROR | MB_OK);
+		MessageBox(hwnd, _T("Cannot configure wininet"),
+			szTitle, MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
 	
@@ -647,8 +803,8 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 		UPLOAD_SERVER, INTERNET_DEFAULT_HTTP_PORT,
 		NULL, NULL, INTERNET_SERVICE_HTTP, 0, NULL);
 	if(NULL == hSession) {
-		MessageBox(hwnd, _T("cannot initiate connection"),
-			_T("Error"), MB_ICONERROR | MB_OK);
+		MessageBox(hwnd, _T("Cannot initiate connection"),
+			szTitle, MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
 
@@ -657,8 +813,8 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 		_T("POST"), UPLOAD_PATH, NULL,
 		NULL, NULL, INTERNET_FLAG_DONT_CACHE | INTERNET_FLAG_RELOAD, NULL);
 	if(NULL == hSession) {
-		MessageBox(hwnd, _T("cannot compose post request"),
-			_T("Error"), MB_ICONERROR | MB_OK);
+		MessageBox(hwnd, _T("Cannot compose post request"),
+			szTitle, MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
 	
@@ -678,8 +834,8 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 		HttpQueryInfo(hRequest, HTTP_QUERY_STATUS_CODE, resCode, &resLen, 0);
 		if( _ttoi(resCode) != 200 ) {
 			// upload 失敗 (status error)
-			MessageBox(hwnd, _T("failed to upload (unexpected result code, under maintainance?)"),
-				_T("Error"), MB_ICONERROR | MB_OK);
+			MessageBox(hwnd, _T("Failed to upload (unexpected result code, under maintainance?)"),
+				szTitle, MB_ICONERROR | MB_OK);
 		} else {
 			// upload 成功，結果 (URL) を読取る
 			DWORD len;
@@ -696,17 +852,22 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 			// 取得結果は NULL terminate されていないので
 			result += '\0';
 
+			//URLをwooparに変換
+			std::string woopar;
+			woopar = "http://gyazo.com/" + result.substr(17);
+
+
 			// クリップボードに URL をコピー
-			setClipBoardText(result.c_str());
+			setClipBoardText(woopar.c_str());
 			
 			// URL を起動
-			execUrl(result.c_str());
+			execUrl(woopar.c_str()); 
 
 			return TRUE;
 		}
 	} else {
 		// アップロード失敗...
-		MessageBox(hwnd, _T("failed to upload"), _T("Error"), MB_ICONERROR | MB_OK);
+		MessageBox(hwnd, _T("Failed to upload"), szTitle, MB_ICONERROR | MB_OK);
 	}
 
 	return FALSE;
