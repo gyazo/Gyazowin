@@ -129,20 +129,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 {
 	WNDCLASS wc;
 
-
-	wc.style         = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc   = LayerWndProc;
-	wc.cbClsExtra    = 0;
-	wc.cbWndExtra    = 0;
-	wc.hInstance     = hInstance;
-	wc.hIcon         = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_GYAZOWIN));
-	wc.hCursor       = LoadCursor(NULL, IDC_CROSS);	// + のカーソル
-	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-	wc.lpszMenuName  = 0;
-	wc.lpszClassName = szWindowClassL;
-
-	RegisterClass(&wc);
-
+	// メインウィンドウ
 	wc.style         = 0;							// WM_PAINT を送らない
 	wc.lpfnWndProc   = WndProc;
 	wc.cbClsExtra    = 0;
@@ -153,6 +140,20 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wc.hbrBackground = 0;							// 背景も設定しない
 	wc.lpszMenuName  = 0;
 	wc.lpszClassName = szWindowClass;
+
+	RegisterClass(&wc);
+
+	// レイヤーウィンドウ
+	wc.style         = CS_HREDRAW | CS_VREDRAW;
+	wc.lpfnWndProc   = LayerWndProc;
+	wc.cbClsExtra    = 0;
+	wc.cbWndExtra    = 0;
+	wc.hInstance     = hInstance;
+	wc.hIcon         = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_GYAZOWIN));
+	wc.hCursor       = LoadCursor(NULL, IDC_CROSS);	// + のカーソル
+	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.lpszMenuName  = 0;
+	wc.lpszClassName = szWindowClassL;
 
 	return RegisterClass(&wc);
 }
@@ -197,6 +198,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	ShowWindow(hWnd, SW_SHOW);
 	UpdateWindow(hWnd);
 
+	// ESCキー検知タイマー
+	SetTimer(hWnd, 1, 100, NULL);
 
 
 	// レイヤーウィンドウの作成
@@ -488,6 +491,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		// キャンセル
 		DestroyWindow(hWnd);
 		return DefWindowProc(hWnd, message, wParam, lParam);
+		break;
+
+	case WM_TIMER:
+		// ESCキー押下の検知
+		if (GetKeyState(VK_ESCAPE) & 0x8000){
+			DestroyWindow(hWnd);
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
 		break;
 
 	case WM_MOUSEMOVE:
