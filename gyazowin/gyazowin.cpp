@@ -746,11 +746,23 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 {
 	const TCHAR* UPLOAD_SERVER	= _T("gyazo.com");
 	const TCHAR* UPLOAD_PATH	= _T("/upload.cgi");
+	const TCHAR* CONFIG_FILE	= _T("config.ini");
+
+	TCHAR szUploadServer[MAX_PATH];
+	TCHAR szUploadPath[MAX_PATH];
+	TCHAR szWD[MAX_PATH];
 
 	const char*  sBoundary = "----BOUNDARYBOUNDARY----";		// boundary
 	const char   sCrLf[]   = { 0xd, 0xa, 0x0 };					// 改行(CR+LF)
 	const TCHAR* szHeader  = 
 		_T("Content-type: multipart/form-data; boundary=----BOUNDARYBOUNDARY----");
+
+	_tgetcwd(szWD, sizeof(szWD) / sizeof(TCHAR));
+	_tcsncat(szWD, _T("\\"), 1);
+	_tcsncat(szWD, CONFIG_FILE, _tcslen(CONFIG_FILE));
+	
+	GetPrivateProfileString(_T("Configuration"), _T("SERVER"), UPLOAD_SERVER, szUploadServer, sizeof(szUploadServer) / sizeof(TCHAR), szWD);
+	GetPrivateProfileString(_T("Configuration"), _T("PATH"), UPLOAD_PATH, szUploadPath, sizeof(szUploadPath) / sizeof(TCHAR), szWD);
 
 	std::ostringstream	buf;	// 送信メッセージ
 	std::string			idStr;	// ID
@@ -811,7 +823,7 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	
 	// 接続先
 	HINTERNET hConnection = InternetConnect(hSession, 
-		UPLOAD_SERVER, INTERNET_DEFAULT_HTTP_PORT,
+		szUploadServer, INTERNET_DEFAULT_HTTP_PORT,
 		NULL, NULL, INTERNET_SERVICE_HTTP, 0, NULL);
 	if(NULL == hSession) {
 		MessageBox(hwnd, _T("Cannot initiate connection"),
@@ -821,7 +833,7 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 
 	// 要求先の設定
 	HINTERNET hRequest    = HttpOpenRequest(hConnection,
-		_T("POST"), UPLOAD_PATH, NULL,
+		_T("POST"), szUploadPath, NULL,
 		NULL, NULL, INTERNET_FLAG_DONT_CACHE | INTERNET_FLAG_RELOAD, NULL);
 	if(NULL == hSession) {
 		MessageBox(hwnd, _T("Cannot compose post request"),
@@ -865,7 +877,7 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 
 			//URLをwooparに変換
 			std::string woopar;
-			woopar = "http://gyazo.com/" + result.substr(17);
+			woopar = result;
 
 
 			// クリップボードに URL をコピー
