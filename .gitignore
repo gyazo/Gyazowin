@@ -2,4 +2,5 @@
 Debug/
 Release/
 *.suo
+*.ncb
 gyazowin.vcproj.*
