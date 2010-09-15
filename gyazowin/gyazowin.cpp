@@ -641,8 +641,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			ReleaseDC(NULL, hdc);
 			DestroyWindow(hWnd);
-			PostMessage(hWnd,WM_CLOSE,0,0);
-//			PostQuitMessage(0);
+			PostQuitMessage(0);
 		}
 		break;
 
