@@ -804,11 +804,21 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	buf << idStr;
 	buf << sCrLf;
 
+	// -- "version" part
+	buf << "--";
+	buf << sBoundary;
+	buf << sCrLf;
+	buf << "content-disposition: form-data; name=\"version\"";
+	buf << sCrLf;
+	buf << sCrLf;
+	buf << "WIN 0.3";
+	buf << sCrLf;
+
 	// -- "imagedata" part
 	buf << "--";
 	buf << sBoundary;
 	buf << sCrLf;
-	buf << "content-disposition: form-data; name=\"imagedata\"";
+	buf << "content-disposition: form-data; name=\"imagedata\" filename=\"gyazo.com\"";
 	buf << sCrLf;
 	//buf << "Content-type: image/png";	// ˆê‰ž
 	//buf << sCrLf;
