@@ -719,9 +719,9 @@ std::string getId()
         FALSE
         );
 
-	 _tcscat( idFile, _T("\\Gyazo"));
-	 _tcscpy( idDir, idFile);
-	 _tcscat( idFile, _T("\\id.txt"));
+	 _tcscat_s( idFile, _T("\\Gyazo"));
+	 _tcscpy_s( idDir, idFile);
+	 _tcscat_s( idFile, _T("\\id.txt"));
 
 	const TCHAR*	 idOldFile			= _T("id.txt");
 	BOOL oldFileExist = FALSE;
