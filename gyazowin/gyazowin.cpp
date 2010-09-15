@@ -708,7 +708,25 @@ VOID execUrl(const char* str)
 // ID を生成・ロードする
 std::string getId()
 {
-	const char*	 idFile			= "id.txt";
+
+    TCHAR idFile[_MAX_PATH];
+	TCHAR idDir[_MAX_PATH];
+    HWND hWnd = NULL; // 不要なのでNULL
+
+    SHGetSpecialFolderPath(
+        hWnd,
+        idFile,
+        CSIDL_APPDATA,
+        FALSE
+        );
+
+	 _tcscat( idFile, _T("\\Gyazo"));
+	 _tcscpy( idDir, idFile);
+	 _tcscat( idFile, _T("\\id.txt"));
+
+	const TCHAR*	 idOldFile			= _T("id.txt");
+	BOOL oldFileExist = FALSE;
+
 	std::string idStr;
 
 	// まずはファイルから ID をロード
@@ -720,22 +738,39 @@ std::string getId()
 		ifs >> idStr;
 		ifs.close();
 	} else{
-		// defaultを設定: 日付(strftime)
-		char		timebuf[64];
-		struct tm	dt;
-		time_t		now	= time(NULL);
-
-		localtime_s(&dt, &now);
-		strftime(timebuf, 64, "%Y%m%d%H%M%S", &dt);
 		
-		// ID 確定
-		idStr = timebuf;
+		std::ifstream ifsold;
+		ifsold.open(idOldFile);
+		if (! ifsold.fail()) {
+			// 同一ディレクトリからID を読み込む(旧バージョンとの互換性)
+			ifsold >> idStr;
+			ifsold.close();
+			oldFileExist = TRUE;
+		}else{
+			// defaultを設定: 日付(strftime)
+			char		timebuf[64];
+			struct tm	dt;
+			time_t		now	= time(NULL);
+
+			localtime_s(&dt, &now);
+			strftime(timebuf, 64, "%Y%m%d%H%M%S", &dt);
+			
+			// ID 確定
+			idStr = timebuf;
+		}
 
 		// ID を保存する
+		CreateDirectory(idDir,NULL);
 		std::ofstream ofs;
 		ofs.open(idFile);
-		ofs << idStr;
-		ofs.close();
+		if (! ofs.fail()) {
+			ofs << idStr;
+			ofs.close();
+			// 旧設定ファイルの削除
+			if (oldFileExist){
+				DeleteFile(idOldFile);
+			}
+		}
 	}
 
 	return idStr;
@@ -863,16 +898,11 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 			// 取得結果は NULL terminate されていないので
 			result += '\0';
 
-			//URLをwooparに変換
-			std::string woopar;
-			woopar = "http://gyazo.com/" + result.substr(17);
-
-
 			// クリップボードに URL をコピー
-			setClipBoardText(woopar.c_str());
+			setClipBoardText(result.c_str());
 			
 			// URL を起動
-			execUrl(woopar.c_str()); 
+			execUrl(result.c_str()); 
 
 			return TRUE;
 		}
