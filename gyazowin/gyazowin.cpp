@@ -29,6 +29,7 @@ BOOL				convertPNG(LPCTSTR destFile, LPCTSTR srcFile);
 BOOL				savePNG(LPCTSTR fileName, HBITMAP newBMP);
 BOOL				uploadFile(HWND hwnd, LPCTSTR fileName);
 std::string			getId();
+BOOL				saveId(const WCHAR* str);
 
 // エントリーポイント
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -710,14 +711,8 @@ std::string getId()
 
     TCHAR idFile[_MAX_PATH];
 	TCHAR idDir[_MAX_PATH];
-    HWND hWnd = NULL; // 不要なのでNULL
 
-    SHGetSpecialFolderPath(
-        hWnd,
-        idFile,
-        CSIDL_APPDATA,
-        FALSE
-        );
+    SHGetSpecialFolderPath( NULL, idFile, CSIDL_APPDATA, FALSE );
 
 	 _tcscat_s( idFile, _T("\\Gyazo"));
 	 _tcscpy_s( idDir, idFile);
@@ -736,43 +731,61 @@ std::string getId()
 		// ID を読み込む
 		ifs >> idStr;
 		ifs.close();
-	} else{
-		
+	} else{		
 		std::ifstream ifsold;
 		ifsold.open(idOldFile);
 		if (! ifsold.fail()) {
 			// 同一ディレクトリからID を読み込む(旧バージョンとの互換性)
 			ifsold >> idStr;
 			ifsold.close();
-			oldFileExist = TRUE;
-		}else{
-			// defaultを設定: 日付(strftime)
-			char		timebuf[64];
-			struct tm	dt;
-			time_t		now	= time(NULL);
-
-			localtime_s(&dt, &now);
-			strftime(timebuf, 64, "%Y%m%d%H%M%S", &dt);
-			
-			// ID 確定
-			idStr = timebuf;
-		}
-
-		// ID を保存する
-		CreateDirectory(idDir,NULL);
-		std::ofstream ofs;
-		ofs.open(idFile);
-		if (! ofs.fail()) {
-			ofs << idStr;
-			ofs.close();
-			// 旧設定ファイルの削除
-			if (oldFileExist){
-				DeleteFile(idOldFile);
-			}
 		}
 	}
 
 	return idStr;
+}
+
+// Save ID
+BOOL saveId(const WCHAR* str)
+{
+
+    TCHAR idFile[_MAX_PATH];
+	TCHAR idDir[_MAX_PATH];
+
+    SHGetSpecialFolderPath( NULL, idFile, CSIDL_APPDATA, FALSE );
+
+	 _tcscat_s( idFile, _T("\\Gyazo"));
+	 _tcscpy_s( idDir, idFile);
+	 _tcscat_s( idFile, _T("\\id.txt"));
+
+	const TCHAR*	 idOldFile			= _T("id.txt");
+
+	size_t  slen;
+	size_t  dcount;
+	slen  = _tcslen(str) + 1; // NULL
+
+	char *idStr = (char *)malloc(slen * sizeof(char));
+	// バイト文字に変換
+	wcstombs_s(&dcount, idStr, slen, str, slen);
+
+	// ID を保存する
+	CreateDirectory(idDir,NULL);
+	std::ofstream ofs;
+	ofs.open(idFile);
+	if (! ofs.fail()) {
+		ofs << idStr;
+		ofs.close();
+
+		// 旧設定ファイルの削除
+		if (PathFileExists(idOldFile)){
+			DeleteFile(idOldFile);
+		}
+	}else{
+		free(idStr);
+		return FALSE;
+	}
+
+	free(idStr);
+	return TRUE;
 }
 
 // PNG ファイルをアップロードする.
@@ -817,7 +830,7 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	buf << "--";
 	buf << sBoundary;
 	buf << sCrLf;
-	buf << "content-disposition: form-data; name=\"imagedata\" filename=\"gyazo.com\"";
+	buf << "content-disposition: form-data; name=\"imagedata\"; filename=\"gyazo.com\"";
 	buf << sCrLf;
 	//buf << "Content-type: image/png";	// 一応
 	//buf << sCrLf;
@@ -892,7 +905,22 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 			MessageBox(hwnd, _T("Failed to upload (unexpected result code, under maintainance?)"),
 				szTitle, MB_ICONERROR | MB_OK);
 		} else {
-			// upload 成功，結果 (URL) を読取る
+			// upload succeeded
+
+			// get new id
+			DWORD idLen = 100;
+			TCHAR newid[100];
+			
+			memset(newid, 0, idLen*sizeof(TCHAR));	
+			_tcscpy_s(newid, _T("X-Gyazo-Id"));
+
+			HttpQueryInfo(hRequest, HTTP_QUERY_CUSTOM, newid, &idLen, 0);
+			if (GetLastError() != ERROR_HTTP_HEADER_NOT_FOUND && idLen != 0) {
+				//save new id
+				saveId(newid);
+			}
+
+			// 結果 (URL) を読取る
 			DWORD len;
 			char  resbuf[1024];
 			std::string result;
