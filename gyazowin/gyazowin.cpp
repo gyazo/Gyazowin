@@ -816,16 +816,6 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	buf << idStr;
 	buf << sCrLf;
 
-	// -- "version" part
-	buf << "--";
-	buf << sBoundary;
-	buf << sCrLf;
-	buf << "content-disposition: form-data; name=\"version\"";
-	buf << sCrLf;
-	buf << sCrLf;
-	buf << "WIN 1.0";
-	buf << sCrLf;
-
 	// -- "imagedata" part
 	buf << "--";
 	buf << sBoundary;
@@ -882,6 +872,17 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 		NULL, NULL, INTERNET_FLAG_DONT_CACHE | INTERNET_FLAG_RELOAD, NULL);
 	if(NULL == hSession) {
 		MessageBox(hwnd, _T("Cannot compose post request"),
+			szTitle, MB_ICONERROR | MB_OK);
+		return FALSE;
+	}
+
+	// User-Agent‚ðŽw’è
+	const TCHAR* ua = _T("User-Agent: Gyazowin/1.0\r\n");
+	BOOL bResult = HttpAddRequestHeaders(
+		hRequest, ua, _tcslen(ua), 
+		HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
+	if (FALSE == bResult) {
+		MessageBox(hwnd, _T("Cannot set user agent"),
 			szTitle, MB_ICONERROR | MB_OK);
 		return FALSE;
 	}
