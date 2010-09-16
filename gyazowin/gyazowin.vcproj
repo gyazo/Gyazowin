@@ -69,6 +69,7 @@
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
+				ImportLibrary=""
 				TargetMachine="1"
 			/>
 			<Tool
@@ -403,13 +404,9 @@
 				RelativePath=".\gyazowin.rc"
 				>
 			</File>
-			<File
-				RelativePath=".\small.ico"
-				>
-			</File>
 		</Filter>
 		<File
-			RelativePath=".\ReadMe.txt"
+			RelativePath="..\Readme.txt"
 			>
 		</File>
 	</Files>

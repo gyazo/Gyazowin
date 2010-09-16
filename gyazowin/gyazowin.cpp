@@ -823,7 +823,7 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	buf << "content-disposition: form-data; name=\"version\"";
 	buf << sCrLf;
 	buf << sCrLf;
-	buf << "WIN 0.3";
+	buf << "WIN 1.0";
 	buf << sCrLf;
 
 	// -- "imagedata" part

@@ -7,7 +7,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{6DB8C365-E719-4BA5-9594-10DFC244D3FD}
 AppName=Gyazo
-AppVerName=Gyazo 0.2
+AppVerName=Gyazo 1.0
 OutputBaseFilename=GyazoSetup
 AppPublisher=Toshiyuki Masui
 AppPublisherURL=http://gyazo.com/
