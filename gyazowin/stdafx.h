@@ -36,6 +36,8 @@
 // TODO: プログラムに必要な追加ヘッダーをここで参照してください。
 #include <strsafe.h>
 #include <shlobj.h> 
+#include "shlwapi.h"
+#pragma comment (lib, "Shlwapi.lib")
 
 #include <gdiplus.h>
 #pragma comment (lib, "Gdiplus.lib")
@@ -51,4 +53,3 @@ using namespace Gdiplus;
 #include <string>
 #include <vector>
 
-#include "shlwapi.h"
