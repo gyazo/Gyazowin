@@ -31,8 +31,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}";
 
 [Files]
-Source: "..\Release\gyazowin.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\Readme.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\Release\gyazowin.exe"; DestDir: "{app}"; Flags: ignoreversion restartreplace
+Source: "..\Readme.txt"; DestDir: "{app}"
 Source: "gdiplus.dll"; DestDir: "{app}"; OnlyBelowVersion:0,5.01.2600
 ; gdiplus.dll only for windows 2000 or before
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
