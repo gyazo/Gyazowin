@@ -27,7 +27,6 @@ WizardSmallImageFile=wizsmall.bmp
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "basque"; MessagesFile: "compiler:Languages\Basque.isl"
 Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
 Name: "catalan"; MessagesFile: "compiler:Languages\Catalan.isl"
 Name: "czech"; MessagesFile: "compiler:Languages\Czech.isl"
@@ -36,6 +35,7 @@ Name: "dutch"; MessagesFile: "compiler:Languages\Dutch.isl"
 Name: "finnish"; MessagesFile: "compiler:Languages\Finnish.isl"
 Name: "french"; MessagesFile: "compiler:Languages\French.isl"
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
+Name: "greek"; MessagesFile: "compiler:Languages\Greek.isl"
 Name: "hebrew"; MessagesFile: "compiler:Languages\Hebrew.isl"
 Name: "hungarian"; MessagesFile: "compiler:Languages\Hungarian.isl"
 Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"
@@ -44,13 +44,28 @@ Name: "norwegian"; MessagesFile: "compiler:Languages\Norwegian.isl"
 Name: "polish"; MessagesFile: "compiler:Languages\Polish.isl"
 Name: "portuguese"; MessagesFile: "compiler:Languages\Portuguese.isl"
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
-Name: "slovak"; MessagesFile: "compiler:Languages\Slovak.isl"
+Name: "serbiancyrillic"; MessagesFile: "compiler:Languages\SerbianCyrillic.isl"
+Name: "serbianlatin"; MessagesFile: "compiler:Languages\SerbianLatin.isl"
 Name: "slovenian"; MessagesFile: "compiler:Languages\Slovenian.isl"
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
+Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl"
 
-[Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}";
-Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}";
+[Code]
+#include "check.iss"  
+#include "pin.iss"  
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ErrorCode: Integer;
+begin
+  if CurStep = ssPostInstall then
+  begin 
+    if IsSevenOrLater() then begin
+      PinToStartMenu(ExpandConstant('{group}') + '\Gyazo.lnk');
+      ShellExec('taskbarpin',ExpandConstant('{group}') + '\Gyazo.lnk','','',0,ewNoWait,ErrorCode) ;
+    end;
+  end;
+end;
 
 [Files]
 Source: "..\Release\gyazowin.exe"; DestDir: "{app}"; Flags: ignoreversion restartreplace
@@ -61,9 +76,8 @@ Source: "gdiplus.dll"; DestDir: "{app}"; OnlyBelowVersion:0,5.01.2600
 
 [Icons]
 Name: "{group}\Gyazo"; Filename: "{app}\gyazowin.exe"
-Name: "{group}\{cm:UninstallProgram,Gyazo}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\Gyazo"; Filename: "{app}\gyazowin.exe"; Tasks: "desktopicon"
-Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\Gyazo"; Filename: "{app}\gyazowin.exe"; Tasks: "quicklaunchicon"
+Name: "{commondesktop}\Gyazo"; Filename: "{app}\gyazowin.exe";
+Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\Gyazo"; Filename: "{app}\gyazowin.exe";
 
 [Run]
 Filename: "{app}\gyazowin.exe"; Description: "{cm:LaunchProgram,Gyazo}"; Flags: unchecked nowait postinstall skipifsilent
