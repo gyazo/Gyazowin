@@ -5,6 +5,12 @@ Release/
 release/
 Output/
 output/
+ipch/
+*.aps
 *.suo
 *.ncb
-gyazowin.vcproj.*
+*.sdf
+*.opensdf
+*.vcproj.*
+*.vcxproj.filters
+*.vcxproj.user
