@@ -1,7 +1,7 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual C++ Express 2008
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gyazowin", "gyazowin\gyazowin.vcproj", "{D07D541C-05E9-49CC-9090-4238AB392C38}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gyazowin", "gyazowin\gyazowin.vcxproj", "{D07D541C-05E9-49CC-9090-4238AB392C38}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,13 +13,10 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{D07D541C-05E9-49CC-9090-4238AB392C38}.Debug|Win32.ActiveCfg = Debug|Win32
 		{D07D541C-05E9-49CC-9090-4238AB392C38}.Debug|Win32.Build.0 = Debug|Win32
-		{D07D541C-05E9-49CC-9090-4238AB392C38}.Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
-		{D07D541C-05E9-49CC-9090-4238AB392C38}.Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Build.0 = Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{D07D541C-05E9-49CC-9090-4238AB392C38}.Debug|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Debug|Win32
 		{D07D541C-05E9-49CC-9090-4238AB392C38}.Release|Win32.ActiveCfg = Release|Win32
 		{D07D541C-05E9-49CC-9090-4238AB392C38}.Release|Win32.Build.0 = Release|Win32
-		{D07D541C-05E9-49CC-9090-4238AB392C38}.Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
-		{D07D541C-05E9-49CC-9090-4238AB392C38}.Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Build.0 = Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
-		{D07D541C-05E9-49CC-9090-4238AB392C38}.Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).Deploy.0 = Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I)
+		{D07D541C-05E9-49CC-9090-4238AB392C38}.Release|Windows Mobile 5.0 Pocket PC SDK (ARMV4I).ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
