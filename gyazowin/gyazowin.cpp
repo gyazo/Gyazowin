@@ -30,6 +30,8 @@ BOOL				savePNG(LPCTSTR fileName, HBITMAP newBMP);
 BOOL				uploadFile(HWND hwnd, LPCTSTR fileName);
 std::string			getId();
 BOOL				saveId(const WCHAR* str);
+void				LastErrorMessageBox(HWND hwnd, LPTSTR lpszError);
+
 
 // エントリーポイント
 int APIENTRY _tWinMain(HINSTANCE hInstance,
@@ -549,6 +551,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			// 線を消す
 			drawRubberband(hdc, &clipRect, TRUE);
+			DestroyWindow(hLayerWnd);
 
 			// 座標チェック
 			if ( clipRect.right  < clipRect.left ) {
@@ -788,10 +791,43 @@ BOOL saveId(const WCHAR* str)
 	return TRUE;
 }
 
+
+void LastErrorMessageBox(HWND hwnd, LPTSTR lpszError) 
+{ 
+    // Retrieve the system error message for the last-error code
+
+    LPVOID lpMsgBuf;
+    LPVOID lpDisplayBuf;
+    DWORD dw = GetLastError(); 
+
+    FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+        FORMAT_MESSAGE_FROM_SYSTEM |
+		FORMAT_MESSAGE_FROM_HMODULE |
+        FORMAT_MESSAGE_IGNORE_INSERTS,
+        GetModuleHandle(_T("wininet.dll")),
+        dw,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR) &lpMsgBuf,
+        0, NULL );
+
+    // Display the error message
+    lpDisplayBuf = (LPVOID)LocalAlloc(LMEM_ZEROINIT, 
+        (lstrlen((LPCTSTR)lpMsgBuf) + lstrlen((LPCTSTR)lpszError) + 40) * sizeof(TCHAR)); 
+    StringCchPrintf((LPTSTR)lpDisplayBuf, 
+        LocalSize(lpDisplayBuf) / sizeof(TCHAR),
+        TEXT("%s\n\nError %d: %s"), 
+        lpszError, dw, lpMsgBuf); 
+    MessageBox(hwnd, (LPCTSTR)lpDisplayBuf, szTitle, MB_OK | MB_ICONERROR); 
+
+    LocalFree(lpMsgBuf);
+    LocalFree(lpDisplayBuf);
+}
+
 // PNG ファイルをアップロードする.
 BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 {
-	const TCHAR* UPLOAD_SERVER	= _T("gyazo.com");
+	const TCHAR* UPLOAD_SERVER	= _T("upload.gyazo.com");
 	const TCHAR* UPLOAD_PATH	= _T("/upload.cgi");
 
 	const char*  sBoundary = "----BOUNDARYBOUNDARY----";		// boundary
@@ -848,11 +884,10 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	std::string oMsg(buf.str());
 
 	// WinInet を準備 (proxy は 規定の設定を利用)
-	HINTERNET hSession    = InternetOpen(szTitle, 
+	HINTERNET hSession    = InternetOpen(_T("Gyazowin/1.0"), 
 		INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 	if(NULL == hSession) {
-		MessageBox(hwnd, _T("Cannot configure wininet"),
-			szTitle, MB_ICONERROR | MB_OK);
+		LastErrorMessageBox(hwnd, _T("Cannot configure wininet."));
 		return FALSE;
 	}
 	
@@ -860,9 +895,9 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	HINTERNET hConnection = InternetConnect(hSession, 
 		UPLOAD_SERVER, INTERNET_DEFAULT_HTTP_PORT,
 		NULL, NULL, INTERNET_SERVICE_HTTP, 0, NULL);
-	if(NULL == hSession) {
-		MessageBox(hwnd, _T("Cannot initiate connection"),
-			szTitle, MB_ICONERROR | MB_OK);
+	if(NULL == hConnection) {
+		LastErrorMessageBox(hwnd, _T("Cannot initiate connection."));
+		InternetCloseHandle(hSession);
 		return FALSE;
 	}
 
@@ -870,24 +905,15 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	HINTERNET hRequest    = HttpOpenRequest(hConnection,
 		_T("POST"), UPLOAD_PATH, NULL,
 		NULL, NULL, INTERNET_FLAG_DONT_CACHE | INTERNET_FLAG_RELOAD, NULL);
-	if(NULL == hSession) {
-		MessageBox(hwnd, _T("Cannot compose post request"),
-			szTitle, MB_ICONERROR | MB_OK);
-		return FALSE;
-	}
-
-	// User-Agentを指定
-	const TCHAR* ua = _T("User-Agent: Gyazowin/1.0\r\n");
-	BOOL bResult = HttpAddRequestHeaders(
-		hRequest, ua, _tcslen(ua), 
-		HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
-	if (FALSE == bResult) {
-		MessageBox(hwnd, _T("Cannot set user agent"),
-			szTitle, MB_ICONERROR | MB_OK);
+	if(NULL == hRequest) {
+		LastErrorMessageBox(hwnd, _T("Cannot compose post request."));
+		InternetCloseHandle(hConnection);
+		InternetCloseHandle(hSession);
 		return FALSE;
 	}
 	
 	// 要求を送信
+	BOOL bSuccess = FALSE;
 	if (HttpSendRequest(hRequest,
                     szHeader,
 					lstrlen(szHeader),
@@ -900,11 +926,20 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 		TCHAR resCode[8];
 
 		// status code を取得
-		HttpQueryInfo(hRequest, HTTP_QUERY_STATUS_CODE, resCode, &resLen, 0);
+		if(!HttpQueryInfo(hRequest, HTTP_QUERY_STATUS_CODE, resCode, &resLen, 0))
+		{
+			LastErrorMessageBox(hwnd, _T("Cannot get status code."));
+			InternetCloseHandle(hRequest);
+			InternetCloseHandle(hConnection);
+			InternetCloseHandle(hSession);
+			return FALSE;
+		}
+
 		if( _ttoi(resCode) != 200 ) {
 			// upload 失敗 (status error)
-			MessageBox(hwnd, _T("Failed to upload (unexpected result code, under maintainance?)"),
-				szTitle, MB_ICONERROR | MB_OK);
+			TCHAR errorBuf[200];
+			StringCchPrintf((LPTSTR)errorBuf, 200, TEXT("Cannot upload the image. Error %s"),resCode);
+			MessageBox(hwnd, errorBuf, szTitle, MB_ICONERROR | MB_OK);
 		} else {
 			// upload succeeded
 
@@ -942,13 +977,18 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 			// URL を起動
 			execUrl(result.c_str()); 
 
-			return TRUE;
+			bSuccess = TRUE;
 		}
 	} else {
 		// アップロード失敗...
-		MessageBox(hwnd, _T("Failed to upload"), szTitle, MB_ICONERROR | MB_OK);
+		LastErrorMessageBox(hwnd, _T("Cannot connect to the server."));
 	}
 
-	return FALSE;
+	// ハンドルクローズ
+	InternetCloseHandle(hRequest);
+	InternetCloseHandle(hConnection);
+	InternetCloseHandle(hSession);
+
+	return bSuccess;
 
 }
