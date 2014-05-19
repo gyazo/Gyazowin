@@ -791,7 +791,7 @@ BOOL saveId(const WCHAR* str)
 // PNG ファイルをアップロードする.
 BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 {
-	const TCHAR* UPLOAD_SERVER	= _T("gyazo.com");
+	const TCHAR* UPLOAD_SERVER	= _T("upload.gyazo.com");
 	const TCHAR* UPLOAD_PATH	= _T("/upload.cgi");
 
 	const char*  sBoundary = "----BOUNDARYBOUNDARY----";		// boundary
