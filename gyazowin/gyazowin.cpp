@@ -860,7 +860,7 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	HINTERNET hConnection = InternetConnect(hSession, 
 		UPLOAD_SERVER, INTERNET_DEFAULT_HTTP_PORT,
 		NULL, NULL, INTERNET_SERVICE_HTTP, 0, NULL);
-	if(NULL == hSession) {
+	if(NULL == hConnection) {
 		MessageBox(hwnd, _T("Cannot initiate connection"),
 			szTitle, MB_ICONERROR | MB_OK);
 		return FALSE;
@@ -870,7 +870,7 @@ BOOL uploadFile(HWND hwnd, LPCTSTR fileName)
 	HINTERNET hRequest    = HttpOpenRequest(hConnection,
 		_T("POST"), UPLOAD_PATH, NULL,
 		NULL, NULL, INTERNET_FLAG_DONT_CACHE | INTERNET_FLAG_RELOAD, NULL);
-	if(NULL == hSession) {
+	if(NULL == hRequest) {
 		MessageBox(hwnd, _T("Cannot compose post request"),
 			szTitle, MB_ICONERROR | MB_OK);
 		return FALSE;
